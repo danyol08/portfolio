@@ -752,8 +752,8 @@ function Projects() {
       <div className="section-inner">
         <SectionHeading
           eyebrow="Selected Work"
-          title="Portfolio"
-          blurb="Placeholder cards, wired to a single data array — swap in real screenshots and links without touching layout code."
+          title="Projects"
+          blurb="A collection of projects I've built — from web systems to custom modules."
         />
         <div className="project-grid">
           {PROJECTS.map((p, i) => (
