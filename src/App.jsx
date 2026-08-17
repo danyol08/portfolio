@@ -113,7 +113,7 @@ const CERTIFICATIONS = ["Cisco Computer Hardware Basics", "Cisco Networking Basi
 
 // Sign up free at formspree.io, create a form, then paste your form ID below
 // (replace YOUR_FORM_ID — looks like https://formspree.io/f/abcdwxyz)
-const FORMSPREE_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/mbgrzgjl";
 
 /* ============================================================
    HOOKS
