@@ -3,7 +3,7 @@ import * as THREE from "three";
 import {
   Cpu, Boxes, Network, Server, Smartphone, Cloud, Code2, Database, Wrench,
   ShieldCheck, Mail, Phone, Linkedin, ArrowUpRight, Menu, X, MapPin,
-  GraduationCap, Award, ChevronRight, ChevronLeft, ExternalLink, Radio,
+  GraduationCap, Award, ChevronRight, ChevronLeft, Radio, Download, FileText,
 } from "lucide-react";
 
 // IMPORTING OF PICTURE/SCREENSHOT
@@ -23,6 +23,7 @@ import park4 from './assets/projects/park4.jpg';
 import park5 from './assets/projects/park5.jpg';
 import odoo1 from './assets/projects/odoo1.png';
 import odoo2 from './assets/projects/odoo2.png';
+import cvFile from './assets/Daniel_Cruz_CV.pdf';
 
 /* ============================================================
    DATA — edit everything here, layout code never needs touching
@@ -31,10 +32,10 @@ import odoo2 from './assets/projects/odoo2.png';
 const PROFILE = {
   name: "Daniel Cruz",
   tagline: "Full-Stack Software Developer · AI-Assisted Development · Odoo ERP · API Integration",
-  location: "Muzon, Taytay, Rizal, Philippines",
+  location: "Taytay, Rizal, Philippines",
   email: "danielzurc08@gmail.com",
   phone: "+63 920 291 1355",
-  linkedin: "#",
+  linkedin: "https://www.linkedin.com/in/daniel-cruz-1b3441356/",
   summary:
     "IT professional with over a year of hands-on experience delivering software support and custom ERP solutions for business clients. Specializes in Odoo ERP customization, backend API development with FastAPI, and mobile development with Flutter — paired with an AI-assisted development workflow that accelerates delivery without sacrificing code quality. Independently owns system architecture, API integration, and end-to-end deployment. Backed by a strong networking and hardware foundation, and now available as a freelance developer for ERP customization, AI-assisted system development, API integration, and IT support projects.",
 };
@@ -174,8 +175,10 @@ function NodeNetwork({ density = 70, linkDistance = 2.6, interactive = true, cla
     let height = mount.clientHeight;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(52, width / height, 0.1, 100);
-    camera.position.z = 9;
+    scene.fog = new THREE.FogExp2(0x090c11, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+    camera.position.z = 9.2;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
@@ -185,24 +188,101 @@ function NodeNetwork({ density = 70, linkDistance = 2.6, interactive = true, cla
     const group = new THREE.Group();
     scene.add(group);
 
-    // Node positions inside a soft spherical volume
+    const starGroup = new THREE.Group();
+    scene.add(starGroup);
+
+    // ---- Distant starfield for parallax depth ----
+    const starCount = isSmall ? 90 : 180;
+    const starPositions = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+    const STAR_TEAL = new THREE.Color(0x3ee8c8);
+    const STAR_BLUE = new THREE.Color(0x5b8cff);
+    for (let i = 0; i < starCount; i++) {
+      const r = 14 + Math.random() * 10;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      starPositions[i * 3 + 2] = r * Math.cos(phi);
+      const c = STAR_TEAL.clone().lerp(STAR_BLUE, Math.random());
+      starColors[i * 3] = c.r;
+      starColors[i * 3 + 1] = c.g;
+      starColors[i * 3 + 2] = c.b;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+    starGeo.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
+    const starMat = new THREE.PointsMaterial({
+      size: 0.045,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.5,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const stars = new THREE.Points(starGeo, starMat);
+    starGroup.add(stars);
+
+    const TEAL = new THREE.Color(0x3ee8c8);
+    const BLUE = new THREE.Color(0x5b8cff);
+    const WHITE = new THREE.Color(0xd8fff5);
+
+    // ---- Node positions inside a soft spherical volume ----
     const nodeCount = effectiveDensity;
+    const radius = 4.6;
     const positions = new Float32Array(nodeCount * 3);
-    const radius = 4.4;
+    const colors = new Float32Array(nodeCount * 3);
+    const sizes = new Float32Array(nodeCount);
+
     for (let i = 0; i < nodeCount; i++) {
       const r = radius * Math.cbrt(Math.random());
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = r * Math.cos(phi);
+      const x = r * Math.sin(phi) * Math.cos(theta);
+      const y = r * Math.sin(phi) * Math.sin(theta);
+      const z = r * Math.cos(phi);
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+
+      // Gradient: teal near the "bottom", blue near the "top", with a few brighter hero nodes
+      const mixT = (y / radius + 1) / 2;
+      const c = TEAL.clone().lerp(BLUE, mixT);
+      if (Math.random() < 0.08) c.lerp(WHITE, 0.6);
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
+
+      sizes[i] = Math.random() < 0.12 ? 1.8 : 1;
     }
 
-    const pointGeo = new THREE.BufferGeometry();
-    pointGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    function buildPointGeo() {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      return g;
+    }
+
+    // Soft halo layer behind the nodes (cheap fake-bloom via large, faint, additive points)
+    const haloGeo = buildPointGeo();
+    const haloMat = new THREE.PointsMaterial({
+      size: 0.34,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.17,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const halo = new THREE.Points(haloGeo, haloMat);
+    group.add(halo);
+
+    // Crisp node layer on top
+    const pointGeo = buildPointGeo();
     const pointMat = new THREE.PointsMaterial({
-      color: 0x4ee8c8,
-      size: 0.1,
+      size: 0.09,
+      vertexColors: true,
       transparent: true,
       opacity: 1,
       sizeAttenuation: true,
@@ -212,8 +292,10 @@ function NodeNetwork({ density = 70, linkDistance = 2.6, interactive = true, cla
     const points = new THREE.Points(pointGeo, pointMat);
     group.add(points);
 
-    // Connect nearby nodes with thin lines
+    // ---- Connect nearby nodes with thin gradient lines ----
     const linePositions = [];
+    const lineColors = [];
+    const edges = [];
     for (let i = 0; i < nodeCount; i++) {
       for (let j = i + 1; j < nodeCount; j++) {
         const dx = positions[i * 3] - positions[j * 3];
@@ -225,14 +307,52 @@ function NodeNetwork({ density = 70, linkDistance = 2.6, interactive = true, cla
             positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2],
             positions[j * 3], positions[j * 3 + 1], positions[j * 3 + 2]
           );
+          lineColors.push(
+            colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2],
+            colors[j * 3], colors[j * 3 + 1], colors[j * 3 + 2]
+          );
+          edges.push(i, j);
         }
       }
     }
     const lineGeo = new THREE.BufferGeometry();
     lineGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(linePositions), 3));
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x5b8cff, transparent: true, opacity: 0.26 });
+    lineGeo.setAttribute("color", new THREE.BufferAttribute(new Float32Array(lineColors), 3));
+    const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false });
     const lines = new THREE.LineSegments(lineGeo, lineMat);
     group.add(lines);
+
+    // ---- Traveling "data pulse" points along a handful of edges ----
+    const pulseCount = reducedMotion ? 0 : Math.min(10, Math.floor(edges.length / 2 / 4));
+    const pulseGeo = new THREE.BufferGeometry();
+    const pulsePositions = new Float32Array(pulseCount * 3);
+    const pulseColors = new Float32Array(pulseCount * 3);
+    const pulseState = [];
+    for (let p = 0; p < pulseCount; p++) {
+      const edgeIdx = Math.floor(Math.random() * (edges.length / 2)) * 2;
+      pulseState.push({
+        a: edges[edgeIdx],
+        b: edges[edgeIdx + 1],
+        t: Math.random(),
+        speed: 0.15 + Math.random() * 0.2,
+      });
+      pulseColors[p * 3] = WHITE.r;
+      pulseColors[p * 3 + 1] = WHITE.g;
+      pulseColors[p * 3 + 2] = WHITE.b;
+    }
+    pulseGeo.setAttribute("position", new THREE.BufferAttribute(pulsePositions, 3));
+    pulseGeo.setAttribute("color", new THREE.BufferAttribute(pulseColors, 3));
+    const pulseMat = new THREE.PointsMaterial({
+      size: 0.14,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.95,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const pulses = new THREE.Points(pulseGeo, pulseMat);
+    if (pulseCount > 0) group.add(pulses);
 
     const target = { x: 0, y: 0 };
     const current = { x: 0, y: 0 };
@@ -263,6 +383,33 @@ function NodeNetwork({ density = 70, linkDistance = 2.6, interactive = true, cla
       current.y += (target.x - current.y) * 0.04;
       group.rotation.x = current.x + t * 0.35 + scrollFactor * 0.6;
       group.rotation.y = current.y + t * 0.5 + scrollFactor * 0.9;
+      starGroup.rotation.x = current.x * 0.3 + t * 0.08 + scrollFactor * 0.15;
+      starGroup.rotation.y = current.y * 0.3 + t * 0.12 + scrollFactor * 0.22;
+
+      // Subtle cinematic camera breathing
+      camera.position.z = 9.2 + Math.sin(t * 0.6) * 0.18;
+
+      // Advance data pulses along their edges
+      if (pulseCount > 0) {
+        const posAttr = pulseGeo.attributes.position;
+        for (let p = 0; p < pulseCount; p++) {
+          const st = pulseState[p];
+          st.t += st.speed * 0.01;
+          if (st.t > 1) {
+            st.t = 0;
+            const edgeIdx = Math.floor(Math.random() * (edges.length / 2)) * 2;
+            st.a = edges[edgeIdx];
+            st.b = edges[edgeIdx + 1];
+          }
+          const ax = positions[st.a * 3], ay = positions[st.a * 3 + 1], az = positions[st.a * 3 + 2];
+          const bx = positions[st.b * 3], by = positions[st.b * 3 + 1], bz = positions[st.b * 3 + 2];
+          posAttr.array[p * 3] = ax + (bx - ax) * st.t;
+          posAttr.array[p * 3 + 1] = ay + (by - ay) * st.t;
+          posAttr.array[p * 3 + 2] = az + (bz - az) * st.t;
+        }
+        posAttr.needsUpdate = true;
+      }
+
       renderer.render(scene, camera);
     }
     animate();
@@ -281,10 +428,16 @@ function NodeNetwork({ density = 70, linkDistance = 2.6, interactive = true, cla
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll);
       if (interactive) mount.removeEventListener("pointermove", handlePointerMove);
+      haloGeo.dispose();
+      haloMat.dispose();
+      starGeo.dispose();
+      starMat.dispose();
       pointGeo.dispose();
       pointMat.dispose();
       lineGeo.dispose();
       lineMat.dispose();
+      pulseGeo.dispose();
+      pulseMat.dispose();
       renderer.dispose();
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
     };
@@ -359,6 +512,9 @@ function Navbar() {
               {l.label}
             </a>
           ))}
+          <a href={cvFile} download="Daniel_Cruz_CV.pdf" className="nav-resume">
+            <Download size={14} /> Resume
+          </a>
           <a href="#contact" onClick={handleClick("contact")} className="btn btn-primary btn-sm">
             Hire Me
           </a>
@@ -374,6 +530,9 @@ function Navbar() {
               {l.label}
             </a>
           ))}
+          <a href={cvFile} download="Daniel_Cruz_CV.pdf" className="nav-resume nav-resume-mobile">
+            <Download size={15} /> Download Resume
+          </a>
           <a href="#contact" onClick={handleClick("contact")} className="btn btn-primary btn-sm">
             Hire Me
           </a>
@@ -403,6 +562,12 @@ function Hero() {
     <section id="hero" className="hero">
       <div className="hero-glow" />
       <div className="hero-content">
+        <div className={`hero-line ${loaded ? "hero-line-in" : ""}`} style={{ transitionDelay: "0ms" }}>
+          <span className="status-badge">
+            <span className="status-dot" />
+            Open to Work — Freelance &amp; Full-Time
+          </span>
+        </div>
         <div className={`hero-line ${loaded ? "hero-line-in" : ""}`} style={{ transitionDelay: "60ms" }}>
           <span className="eyebrow eyebrow-hero">
             <MapPin size={13} /> {PROFILE.location}
@@ -420,6 +585,9 @@ function Hero() {
           </a>
           <a href="#contact" onClick={handleClick("contact")} className="btn btn-ghost">
             Hire Me
+          </a>
+          <a href={cvFile} download="Daniel_Cruz_CV.pdf" className="btn btn-outline">
+            <Download size={16} /> Download CV
           </a>
         </div>
       </div>
@@ -726,9 +894,6 @@ function ProjectCard({ project, index }) {
                 <span key={t} className="tag">{t}</span>
               ))}
             </div>
-            <a href={project.link} className="project-link">
-              View Project <ExternalLink size={14} />
-            </a>
           </div>
         </div>
       </Reveal>
@@ -752,8 +917,8 @@ function Projects() {
       <div className="section-inner">
         <SectionHeading
           eyebrow="Selected Work"
-          title="Projects"
-          blurb="A collection of projects I've built — from web systems to custom modules."
+          title="Portfolio"
+          blurb="Placeholder cards, wired to a single data array — swap in real screenshots and links without touching layout code."
         />
         <div className="project-grid">
           {PROJECTS.map((p, i) => (
@@ -850,6 +1015,14 @@ function Contact() {
               <Linkedin size={16} /> LinkedIn Profile
             </a>
           </div>
+          <a href={cvFile} download="Daniel_Cruz_CV.pdf" className="cv-card">
+            <span className="cv-card-icon"><FileText size={20} /></span>
+            <span className="cv-card-text">
+              <span className="cv-card-title">Daniel_Cruz_CV.pdf</span>
+              <span className="cv-card-sub">Download full resume</span>
+            </span>
+            <span className="cv-card-download"><Download size={17} /></span>
+          </a>
         </Reveal>
         <Reveal delay={120} className="contact-form-wrap">
           <form className="contact-form" onSubmit={handleSubmit}>
@@ -990,6 +1163,32 @@ function GlobalStyles() {
       }
       .eyebrow-hero { color: rgba(231,237,245,0.7); }
 
+      .status-badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.02em;
+        color: var(--teal); background: rgba(62,232,200,0.09);
+        border: 1px solid rgba(62,232,200,0.3); border-radius: 999px;
+        padding: 6px 14px 6px 10px; margin-bottom: 4px;
+      }
+      .status-dot {
+        position: relative; width: 7px; height: 7px; border-radius: 50%;
+        background: var(--teal); flex-shrink: 0;
+      }
+      .status-dot::after {
+        content: ""; position: absolute; inset: -4px; border-radius: 50%;
+        border: 1.5px solid var(--teal); animation: statusPulse 1.8s ease-out infinite;
+      }
+      @keyframes statusPulse {
+        0% { transform: scale(0.6); opacity: 0.9; }
+        100% { transform: scale(1.8); opacity: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .status-dot::after { animation: none; opacity: 0.4; }
+      }
+      @media (max-width: 640px) {
+        .status-badge { font-size: 11px; padding: 5px 12px 5px 9px; }
+      }
+
       .section-heading { margin-bottom: 44px; max-width: 640px; }
       .section-title { font-size: clamp(28px, 4vw, 40px); font-weight: 700; margin-top: 10px; }
       .section-blurb { margin-top: 14px; font-size: 16px; max-width: 560px; }
@@ -1028,6 +1227,16 @@ function GlobalStyles() {
       .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px -8px rgba(62,232,200,0.55); }
       .btn-ghost { border-color: var(--border); color: var(--text); background: rgba(255,255,255,0.02); }
       .btn-ghost:hover { border-color: var(--teal); color: var(--teal); transform: translateY(-2px); }
+      .btn-outline {
+        border-color: rgba(62,232,200,0.4); color: var(--teal); background: rgba(62,232,200,0.06);
+      }
+      .btn-outline:hover { border-color: var(--teal); background: rgba(62,232,200,0.14); transform: translateY(-2px); }
+      .nav-resume {
+        display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--text-muted);
+        padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); transition: border-color 0.2s ease, color 0.2s ease;
+      }
+      .nav-resume:hover { color: var(--teal); border-color: rgba(62,232,200,0.4); }
+      .nav-resume-mobile { justify-content: center; margin-top: 4px; }
       .btn:disabled { opacity: 0.7; cursor: default; transform: none; }
 
       /* Hero */
@@ -1066,10 +1275,11 @@ function GlobalStyles() {
       .pillar p { font-size: 13.5px; }
 
       /* Skills */
-      .skill-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+      .skill-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); align-items: stretch; }
       .skill-card {
         background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
         padding: 22px; transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        display: flex; flex-direction: column; height: 100%;
       }
       .skill-card:hover { border-color: rgba(62,232,200,0.4); box-shadow: 0 16px 40px -20px rgba(62,232,200,0.35); }
       .skill-card-icon {
@@ -1099,22 +1309,29 @@ function GlobalStyles() {
       .timeline-card li { font-size: 14.5px; color: var(--text-muted); line-height: 1.6; }
 
       /* Projects */
-      .project-grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+      .project-grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: stretch; }
       .project-card {
         background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-        overflow: hidden; transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        overflow: hidden; transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+        display: flex; flex-direction: column; height: 100%;
       }
-      .project-card:hover { border-color: rgba(91,140,255,0.4); box-shadow: 0 20px 48px -22px rgba(91,140,255,0.4); }
-      .project-image { aspect-ratio: 16/10; overflow: hidden; position: relative; }
-      .project-image img { width: 100%; height: 100%; object-fit: cover; }
+      .project-card:hover { border-color: rgba(91,140,255,0.4); box-shadow: 0 20px 48px -22px rgba(91,140,255,0.4); transform: translateY(-3px); }
+      .project-image { aspect-ratio: 16/10; overflow: hidden; position: relative; flex-shrink: 0; }
+      .project-image::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(180deg, transparent 60%, rgba(9,12,17,0.5) 100%);
+      }
+      .project-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+      .project-card:hover .project-image img { transform: scale(1.05); }
       .project-carousel { position: relative; width: 100%; height: 100%; }
-      .project-carousel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .project-carousel img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
+      .project-card:hover .project-carousel img { transform: scale(1.05); }
       .carousel-image-clickable { cursor: zoom-in; }
       .carousel-arrow {
         position: absolute; top: 50%; transform: translateY(-50%);
         width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.18);
         background: rgba(9,12,17,0.55); backdrop-filter: blur(6px); color: #fff;
-        display: flex; align-items: center; justify-content: center;
+        display: flex; align-items: center; justify-content: center; z-index: 1;
         opacity: 0; transition: opacity 0.2s ease, background 0.2s ease;
       }
       .project-carousel:hover .carousel-arrow { opacity: 1; }
@@ -1122,7 +1339,7 @@ function GlobalStyles() {
       .carousel-arrow-left { left: 10px; }
       .carousel-arrow-right { right: 10px; }
       .carousel-dots {
-        position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+        position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 1;
         display: flex; gap: 6px; padding: 5px 8px; border-radius: 999px;
         background: rgba(9,12,17,0.5); backdrop-filter: blur(4px);
       }
@@ -1136,12 +1353,15 @@ function GlobalStyles() {
         background: linear-gradient(135deg, rgba(62,232,200,0.16), rgba(91,140,255,0.16));
       }
       .project-image-placeholder span { font-family: var(--font-mono); font-size: 32px; color: rgba(255,255,255,0.35); }
-      .project-body { padding: 22px; }
+      .project-body { padding: 22px; display: flex; flex-direction: column; flex: 1; }
       .project-context { display: inline-block; font-size: 11px; color: var(--teal); margin-bottom: 8px; }
       .project-body h3 { font-size: 17px; margin-bottom: 8px; }
-      .project-body p { font-size: 14px; margin-bottom: 16px; }
-      .project-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
-      .project-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--teal); }
+      .project-body p {
+        font-size: 14px; margin-bottom: 16px; flex: 1;
+        display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden;
+      }
+      .project-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; }
+      .project-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--teal); margin-top: auto; }
       .project-link:hover { color: var(--blue); }
 
       /* Lightbox */
@@ -1200,6 +1420,21 @@ function GlobalStyles() {
       .contact-grid { position: relative; z-index: 1; display: grid; gap: 48px; grid-template-columns: 1fr; }
       @media (min-width: 860px) { .contact-grid { grid-template-columns: 1fr 1fr; align-items: start; } }
       .contact-links { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; }
+      .cv-card {
+        display: flex; align-items: center; gap: 14px; margin-top: 26px; padding: 16px 18px;
+        border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+        transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+      }
+      .cv-card:hover { border-color: rgba(62,232,200,0.45); box-shadow: 0 16px 40px -20px rgba(62,232,200,0.4); transform: translateY(-2px); }
+      .cv-card-icon {
+        width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(62,232,200,0.12); color: var(--teal);
+      }
+      .cv-card-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+      .cv-card-title { font-size: 14px; font-weight: 600; color: var(--text); }
+      .cv-card-sub { font-size: 12px; color: var(--text-muted); }
+      .cv-card-download { color: var(--teal); flex-shrink: 0; }
       .contact-link { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; color: var(--text); }
       .contact-link svg { color: var(--teal); }
       .contact-link:hover { color: var(--teal); }
