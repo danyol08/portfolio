@@ -1,0 +1,296 @@
+/* ============================================================
+   DESIGN TOKENS
+   Direction: cool "pearl studio" paper, deep ink type, one small
+   fiber-orange signal (a nod to patch cables / fibre jackets), and
+   a dark ink finale. Light is the page; the screens carry the colour.
+   ============================================================ */
+
+:root {
+  --paper: #e8ecf2;
+  --paper-hi: #f6f8fb;
+  --paper-lo: #dce2eb;
+
+  --ink: #0b1220;
+  --ink-soft: #2a3347;
+  --muted: #566176;
+
+  --line: rgba(11, 18, 32, 0.12);
+  --line-strong: rgba(11, 18, 32, 0.28);
+
+  --night: #0b1220;
+  --on-night: #e8ecf2;
+  --on-night-muted: #9aa6bc;
+  --night-line: rgba(232, 236, 242, 0.16);
+
+  --signal: #e8531d; /* decorative use only */
+  --signal-ink: #b83a0c; /* text on paper, 5.9:1 */
+  --signal-night: #ff7140; /* text on night, 6.3:1 */
+
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --gutter: clamp(20px, 4.5vw, 64px);
+  --maxw: 1240px;
+  --nav-h: 60px;
+  --sheet-r: clamp(24px, 4vw, 48px);
+  --section-y: clamp(64px, 8vw, 120px);
+}
+
+/* ============================================================
+   RESET + BASE
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+h1, h2, h3 { font-family: var(--font-display); }
+
+::selection { background: var(--ink); color: var(--paper); }
+
+:focus-visible {
+  outline: 2px solid var(--signal-ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.contact :focus-visible,
+.footer :focus-visible,
+.nav-sheet :focus-visible,
+.lightbox :focus-visible {
+  outline-color: var(--signal-night);
+}
+
+/* `clip` (not `hidden`) so position: sticky keeps working in the hero. */
+.site { position: relative; overflow-x: clip; }
+
+.wrap {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.skip-link {
+  position: absolute; left: 12px; top: -64px; z-index: 100;
+  padding: 10px 16px; border-radius: 999px;
+  background: var(--ink); color: var(--paper); font-weight: 600;
+}
+.skip-link:focus { top: 12px; }
+
+.scroll-progress {
+  position: fixed; inset: 0 0 auto 0; z-index: 60; height: 2px;
+  background: var(--signal); transform-origin: 0 50%; transform: scaleX(0);
+  pointer-events: none;
+}
+
+/* ============================================================
+   SHARED TYPE + MOTION PRIMITIVES
+   ============================================================ */
+
+.section-head { max-width: 820px; margin-bottom: clamp(40px, 6vw, 80px); }
+
+.section-title {
+  font-weight: 700;
+  font-size: clamp(2.3rem, 5.4vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.section-blurb { margin-top: 20px; max-width: 54ch; color: var(--muted); font-size: 1.1rem; }
+
+/* Words rise out of a mask. The padding/margin pairs keep descenders and tight tracking unclipped. */
+.split-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding: 0.06em 0.05em 0.16em;
+  margin: -0.06em -0.05em -0.16em;
+}
+.split-inner {
+  display: inline-block;
+  transform: translate3d(0, 112%, 0);
+  transition: transform 1s var(--ease-out);
+}
+.split.is-in .split-inner { transform: none; }
+
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  transition: opacity 0.9s var(--ease-out) var(--d, 0ms), transform 0.9s var(--ease-out) var(--d, 0ms);
+}
+.reveal.is-in { opacity: 1; transform: none; }
+
+.scroll-word { transition: opacity 0.15s linear; }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+/* The wrapper widens the "pull" zone; padding and negative margin cancel out so layout is unchanged. */
+.magnet { display: inline-flex; padding: 14px; margin: -14px; }
+.magnet > * {
+  transform: translate3d(var(--mx, 0px), var(--my, 0px), 0);
+  transition: transform 0.6s var(--ease-out), background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 24px; border-radius: 999px;
+  border: 1px solid transparent; font-weight: 600; font-size: 0.95rem; white-space: nowrap;
+}
+.btn-sm { min-height: 40px; padding: 0 18px; font-size: 0.875rem; }
+.btn:disabled { opacity: 0.65; cursor: default; }
+
+.btn-solid { background: var(--ink); color: var(--paper); }
+.btn-solid:hover { background: var(--ink-soft); }
+.btn-line { border-color: var(--line-strong); color: var(--ink); }
+.btn-line:hover { border-color: var(--ink); background: rgba(11, 18, 32, 0.05); }
+.btn-signal { background: var(--signal-night); color: var(--night); }
+.btn-signal:hover:not(:disabled) { background: #ff8c63; }
+.btn-line-night { border-color: var(--night-line); color: var(--on-night); }
+
+/* ============================================================
+   NAVBAR
+   ============================================================ */
+
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+  padding: max(12px, env(safe-area-inset-top)) var(--gutter) 0;
+  pointer-events: none;
+}
+
+.nav-bar {
+  position: relative; z-index: 2; pointer-events: auto;
+  display: flex; align-items: center; gap: 20px;
+  max-width: var(--maxw); height: var(--nav-h); margin-inline: auto; padding: 0 8px 0 10px;
+  border: 1px solid transparent; border-radius: 999px;
+  transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+.nav.is-scrolled .nav-bar {
+  background: rgba(246, 248, 251, 0.82);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border-color: var(--line);
+  box-shadow: 0 12px 32px -20px rgba(11, 18, 32, 0.4);
+}
+.nav.is-open .nav-bar { background: transparent; border-color: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+.brand { display: inline-flex; align-items: center; gap: 12px; font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; }
+.brand-mark {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  background: var(--ink); color: var(--paper); font-size: 0.82rem; letter-spacing: 0.02em;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.nav.is-open .brand,
+.nav.is-open .nav-toggle { color: var(--on-night); }
+.nav.is-open .brand-mark { background: var(--on-night); color: var(--night); }
+
+.nav-links { display: none; align-items: center; gap: 2px; margin-left: auto; }
+.nav-links a {
+  position: relative; padding: 9px 14px; border-radius: 999px;
+  font-size: 0.92rem; font-weight: 500; color: var(--ink-soft);
+  transition: color 0.25s ease, background-color 0.25s ease;
+}
+.nav-links a:hover { color: var(--ink); background: rgba(11, 18, 32, 0.05); }
+.nav-links a.is-active { color: var(--ink); }
+.nav-links a.is-active::after {
+  content: ""; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px;
+  border-radius: 50%; background: var(--signal);
+}
+
+.nav-actions { display: none; align-items: center; gap: 8px; }
+.nav-resume {
+  display: none; align-items: center; gap: 6px; padding: 0 12px;
+  font-size: 0.875rem; font-weight: 500; color: var(--muted); transition: color 0.2s ease;
+}
+.nav-resume:hover { color: var(--ink); }
+
+.nav-toggle {
+  position: relative; display: grid; place-items: center; margin-left: auto;
+  width: 46px; height: 46px; border-radius: 50%;
+}
+
+.nav-sheet {
+  position: fixed; inset: 0; z-index: 1; pointer-events: auto;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 32px;
+  padding: calc(var(--nav-h) + 48px) var(--gutter) max(32px, env(safe-area-inset-bottom));
+  background: var(--night); color: var(--on-night);
+  clip-path: inset(0 0 100% 0); visibility: hidden;
+  transition: clip-path 0.7s var(--ease-io), visibility 0s linear 0.7s;
+  overflow-y: auto;
+}
+.nav.is-open .nav-sheet { clip-path: inset(0); visibility: visible; transition: clip-path 0.7s var(--ease-io), visibility 0s; }
+
+.nav-sheet nav a {
+  display: block; padding: 4px 0;
+  font-family: var(--font-display); font-weight: 700; letter-spacing: -0.03em; line-height: 1.12;
+  font-size: clamp(2.2rem, 10.5vw, 3.6rem);
+  opacity: 0; transform: translate3d(0, 36px, 0);
+  transition: opacity 0.5s ease, transform 0.8s var(--ease-out);
+}
+.nav.is-open .nav-sheet nav a {
+  opacity: 1; transform: none;
+  transition-delay: calc(var(--i) * 55ms + 260ms);
+}
+.nav-sheet-foot {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 18px;
+  color: var(--on-night-muted); font-size: 1rem;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.nav.is-open .nav-sheet-foot { opacity: 1; transition-delay: calc(var(--i) * 55ms + 260ms); }
+
+@media (min-width: 1040px) {
+  .nav-links { display: flex; }
+  .nav-actions { display: flex; }
+  .nav-toggle, .nav-sheet { display: none; }
+  .nav-bar { padding-left: 14px; }
+}
+@media (min-width: 1240px) {
+  .nav-resume { display: inline-flex; }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+  .split-inner { transform: none; }
+  .magnet > * { transform: none; }
+}
